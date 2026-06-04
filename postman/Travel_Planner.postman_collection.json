@@ -1,0 +1,557 @@
+{
+  "info": {
+    "_postman_id": "1ce59b03-6275-4f74-9ffb-6b6d7b047c0f",
+    "name": "Travel Planner API",
+    "description": "Postman collection for the Travel Planner FastAPI assessment project.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{username}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000/api"
+    },
+    {
+      "key": "username",
+      "value": "admin"
+    },
+    {
+      "key": "password",
+      "value": "admin"
+    },
+    {
+      "key": "project_id",
+      "value": ""
+    },
+    {
+      "key": "place_id",
+      "value": ""
+    },
+    {
+      "key": "external_id",
+      "value": "129884"
+    },
+    {
+      "key": "external_id_2",
+      "value": "14572"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Health check returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Projects list requires auth",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/projects",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Missing credentials returns 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "Create project",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chicago Art Trip\",\n  \"description\": \"Weekend route\",\n  \"start_date\": \"2026-07-01\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Project is created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('project_id', body.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create project with places",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Project With Imported Places\",\n  \"description\": \"Created in one request\",\n  \"places\": [\n    {\n      \"external_id\": \"{{external_id}}\",\n      \"notes\": \"First stop\"\n    },\n    {\n      \"external_id\": \"{{external_id_2}}\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Project with places is created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Response contains places', function () {",
+                  "  pm.expect(body.places.length).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List projects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/projects?limit=10&offset=0&search=Chicago",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "search",
+                  "value": "Chicago"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get project",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "{{project_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update project",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated from Postman\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "{{project_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Places",
+      "item": [
+        {
+          "name": "Add place to project",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"external_id\": \"{{external_id}}\",\n  \"notes\": \"Imported from Art Institute API\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/places",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "{{project_id}}",
+                "places"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('place_id', body.id);",
+                  "}",
+                  "pm.test('Place is created or duplicate is rejected', function () {",
+                  "  pm.expect([201, 409]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List project places",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/places?limit=10&offset=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "{{project_id}}",
+                "places"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Places are listed', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "if (body.items.length > 0) {",
+                  "  pm.collectionVariables.set('place_id', body.items[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get project place",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/places/{{place_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "{{project_id}}",
+                "places",
+                "{{place_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update place notes",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Updated note from Postman\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/places/{{place_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "{{project_id}}",
+                "places",
+                "{{place_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark place visited",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"visited\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/places/{{place_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "{{project_id}}",
+                "places",
+                "{{place_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List visited places",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/places?visited=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "{{project_id}}",
+                "places"
+              ],
+              "query": [
+                {
+                  "key": "visited",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Validation and business rules",
+      "item": [
+        {
+          "name": "Reject missing external place",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"external_id\": \"0\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/places",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "{{project_id}}",
+                "places"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Missing external place returns 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete project",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "{{project_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Project delete is either successful or blocked by visited places', function () {",
+                  "  pm.expect([204, 409]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

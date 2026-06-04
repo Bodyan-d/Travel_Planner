@@ -21,6 +21,10 @@ docker compose up --build
 
 The Docker setup stores the SQLite database in a named volume and exposes the API on `http://127.0.0.1:8000`.
 
+## Postman
+
+Import `postman/Travel_Planner.postman_collection.json` into Postman. The collection uses `base_url`, `username`, and `password` variables with local defaults.
+
 ## Current status
 
 Implemented project and project-place CRUD endpoints with Art Institute of Chicago API validation.
