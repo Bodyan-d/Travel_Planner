@@ -13,6 +13,14 @@ uvicorn app.main:app --reload
 
 The API will be available at `http://127.0.0.1:8000`.
 
+## Docker
+
+```powershell
+docker compose up --build
+```
+
+The Docker setup stores the SQLite database in a named volume and exposes the API on `http://127.0.0.1:8000`.
+
 ## Current status
 
 Implemented project and project-place CRUD endpoints with Art Institute of Chicago API validation.

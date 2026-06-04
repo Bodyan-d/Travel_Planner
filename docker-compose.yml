@@ -1,0 +1,16 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: sqlite:////data/travel_planner.db
+      ARTIC_BASE_URL: https://api.artic.edu/api/v1
+      ARTIC_CACHE_TTL_SECONDS: 300
+      BASIC_AUTH_USERNAME: admin
+      BASIC_AUTH_PASSWORD: admin
+    volumes:
+      - travel_planner_data:/data
+
+volumes:
+  travel_planner_data:
