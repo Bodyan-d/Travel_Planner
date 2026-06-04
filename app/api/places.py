@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.crud import places as place_crud
 from app.crud import projects as project_crud
+from app.db.models import ProjectPlace, TravelProject
 from app.db.session import get_db
 from app.schemas.place import PlaceCreate, PlaceList, PlaceRead, PlaceUpdate
 from app.services.artic import ArticClient, get_artic_client
@@ -10,7 +11,7 @@ from app.services.artic import ArticClient, get_artic_client
 router = APIRouter(prefix="/projects/{project_id}/places", tags=["places"])
 
 
-def get_project_or_404(project_id: int, db: Session):
+def get_project_or_404(project_id: int, db: Session) -> TravelProject:
     project = project_crud.get_project(db, project_id)
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
@@ -23,7 +24,7 @@ def add_place(
     payload: PlaceCreate,
     db: Session = Depends(get_db),
     artic_client: ArticClient = Depends(get_artic_client),
-) -> PlaceRead:
+) -> ProjectPlace:
     project = get_project_or_404(project_id, db)
 
     if place_crud.count_project_places(db, project_id) >= place_crud.MAX_PLACES_PER_PROJECT:
@@ -64,11 +65,12 @@ def list_places(
         offset=offset,
         visited=visited,
     )
-    return PlaceList(items=items, total=total, limit=limit, offset=offset)
+    place_items = [PlaceRead.model_validate(item) for item in items]
+    return PlaceList(items=place_items, total=total, limit=limit, offset=offset)
 
 
 @router.get("/{place_id}", response_model=PlaceRead)
-def get_place(project_id: int, place_id: int, db: Session = Depends(get_db)) -> PlaceRead:
+def get_place(project_id: int, place_id: int, db: Session = Depends(get_db)) -> ProjectPlace:
     get_project_or_404(project_id, db)
     place = place_crud.get_place(db, project_id, place_id)
     if place is None:
@@ -82,7 +84,7 @@ def update_place(
     place_id: int,
     payload: PlaceUpdate,
     db: Session = Depends(get_db),
-) -> PlaceRead:
+) -> ProjectPlace:
     project = get_project_or_404(project_id, db)
     place = place_crud.get_place(db, project_id, place_id)
     if place is None:

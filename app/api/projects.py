@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.crud import projects as project_crud
-from app.db.models import ProjectStatus
+from app.db.models import ProjectStatus, TravelProject
 from app.db.session import get_db
 from app.schemas.project import ProjectCreate, ProjectList, ProjectRead, ProjectUpdate, ProjectWithPlacesRead
 from app.services.artic import ArticClient, get_artic_client
@@ -15,7 +15,7 @@ def create_project(
     payload: ProjectCreate,
     db: Session = Depends(get_db),
     artic_client: ArticClient = Depends(get_artic_client),
-) -> ProjectWithPlacesRead:
+) -> TravelProject:
     artworks = []
     for place in payload.places:
         artwork = artic_client.get_artwork(place.external_id)
@@ -46,11 +46,12 @@ def list_projects(
         status=status_filter,
         search=search,
     )
-    return ProjectList(items=items, total=total, limit=limit, offset=offset)
+    project_items = [ProjectRead.model_validate(item) for item in items]
+    return ProjectList(items=project_items, total=total, limit=limit, offset=offset)
 
 
 @router.get("/{project_id}", response_model=ProjectRead)
-def get_project(project_id: int, db: Session = Depends(get_db)) -> ProjectRead:
+def get_project(project_id: int, db: Session = Depends(get_db)) -> TravelProject:
     project = project_crud.get_project(db, project_id)
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
@@ -62,7 +63,7 @@ def update_project(
     project_id: int,
     payload: ProjectUpdate,
     db: Session = Depends(get_db),
-) -> ProjectRead:
+) -> TravelProject:
     project = project_crud.get_project(db, project_id)
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
