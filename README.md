@@ -15,4 +15,4 @@ The API will be available at `http://127.0.0.1:8000`.
 
 ## Current status
 
-Initial FastAPI project skeleton with a health endpoint.
+Implemented project and project-place CRUD endpoints with Art Institute of Chicago API validation.
