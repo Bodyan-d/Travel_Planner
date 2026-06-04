@@ -4,13 +4,30 @@ from sqlalchemy.orm import Session
 from app.crud import projects as project_crud
 from app.db.models import ProjectStatus
 from app.db.session import get_db
-from app.schemas.project import ProjectCreate, ProjectList, ProjectRead, ProjectUpdate
+from app.schemas.project import ProjectCreate, ProjectList, ProjectRead, ProjectUpdate, ProjectWithPlacesRead
+from app.services.artic import ArticClient, get_artic_client
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 
-@router.post("", response_model=ProjectRead, status_code=status.HTTP_201_CREATED)
-def create_project(payload: ProjectCreate, db: Session = Depends(get_db)) -> ProjectRead:
+@router.post("", response_model=ProjectWithPlacesRead, status_code=status.HTTP_201_CREATED)
+def create_project(
+    payload: ProjectCreate,
+    db: Session = Depends(get_db),
+    artic_client: ArticClient = Depends(get_artic_client),
+) -> ProjectWithPlacesRead:
+    artworks = []
+    for place in payload.places:
+        artwork = artic_client.get_artwork(place.external_id)
+        if artwork is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"External place {place.external_id} not found in Art Institute API",
+            )
+        artworks.append((artwork, place))
+
+    if artworks:
+        return project_crud.create_project_with_places(db, payload=payload, artworks=artworks)
     return project_crud.create_project(db, payload)
 
 

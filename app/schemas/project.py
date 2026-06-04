@@ -1,8 +1,9 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.db.models import ProjectStatus
+from app.schemas.place import PlaceCreate, PlaceRead
 
 
 class ProjectBase(BaseModel):
@@ -12,7 +13,14 @@ class ProjectBase(BaseModel):
 
 
 class ProjectCreate(ProjectBase):
-    pass
+    places: list[PlaceCreate] = Field(default_factory=list, max_length=10)
+
+    @model_validator(mode="after")
+    def validate_unique_places(self) -> "ProjectCreate":
+        external_ids = [place.external_id for place in self.places]
+        if len(external_ids) != len(set(external_ids)):
+            raise ValueError("Project cannot contain duplicate places")
+        return self
 
 
 class ProjectUpdate(BaseModel):
@@ -28,6 +36,10 @@ class ProjectRead(ProjectBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ProjectWithPlacesRead(ProjectRead):
+    places: list[PlaceRead]
 
 
 class ProjectList(BaseModel):

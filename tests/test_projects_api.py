@@ -2,6 +2,26 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.db.models import ProjectPlace, TravelProject
+from app.main import app
+from app.services.artic import ArticArtwork, get_artic_client
+
+
+class FakeArticClient:
+    def __init__(self, missing_ids: set[str] | None = None) -> None:
+        self.missing_ids = missing_ids or set()
+
+    def get_artwork(self, external_id: str) -> ArticArtwork | None:
+        if external_id in self.missing_ids:
+            return None
+        return ArticArtwork(
+            external_id=external_id,
+            title=f"Artwork {external_id}",
+            api_link=f"https://api.artic.edu/api/v1/artworks/{external_id}",
+        )
+
+
+def override_artic_client(client: FakeArticClient) -> None:
+    app.dependency_overrides[get_artic_client] = lambda: client
 
 
 def test_create_project(client: TestClient) -> None:
@@ -15,6 +35,76 @@ def test_create_project(client: TestClient) -> None:
     assert data["id"] == 1
     assert data["name"] == "Paris museums"
     assert data["status"] == "active"
+    assert data["places"] == []
+
+
+def test_create_project_with_places(client: TestClient) -> None:
+    override_artic_client(FakeArticClient())
+
+    response = client.post(
+        "/api/projects",
+        json={
+            "name": "Chicago art route",
+            "places": [
+                {"external_id": "123", "notes": "Start here"},
+                {"external_id": "456"},
+            ],
+        },
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == "Chicago art route"
+    assert len(data["places"]) == 2
+    assert data["places"][0]["external_id"] == "123"
+    assert data["places"][0]["notes"] == "Start here"
+
+
+def test_create_project_with_places_rejects_duplicate_external_ids(client: TestClient) -> None:
+    override_artic_client(FakeArticClient())
+
+    response = client.post(
+        "/api/projects",
+        json={
+            "name": "Duplicate route",
+            "places": [{"external_id": "123"}, {"external_id": "123"}],
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_create_project_with_places_rejects_more_than_ten_places(client: TestClient) -> None:
+    override_artic_client(FakeArticClient())
+
+    response = client.post(
+        "/api/projects",
+        json={
+            "name": "Too many places",
+            "places": [{"external_id": str(index)} for index in range(11)],
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_create_project_with_places_does_not_persist_when_external_place_is_missing(
+    client: TestClient,
+) -> None:
+    override_artic_client(FakeArticClient(missing_ids={"404"}))
+
+    response = client.post(
+        "/api/projects",
+        json={
+            "name": "Missing artwork route",
+            "places": [{"external_id": "123"}, {"external_id": "404"}],
+        },
+    )
+    list_response = client.get("/api/projects")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "External place 404 not found in Art Institute API"
+    assert list_response.json()["total"] == 0
 
 
 def test_list_projects_supports_pagination_and_search(client: TestClient) -> None:

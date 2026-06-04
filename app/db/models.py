@@ -42,6 +42,7 @@ class TravelProject(Base):
     places: Mapped[list["ProjectPlace"]] = relationship(
         back_populates="project",
         cascade="all, delete-orphan",
+        order_by="ProjectPlace.id",
         passive_deletes=True,
     )
 

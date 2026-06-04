@@ -3,11 +3,39 @@ from sqlalchemy.orm import Session
 
 from app.db.models import ProjectPlace, ProjectStatus, TravelProject
 from app.schemas.project import ProjectCreate, ProjectUpdate
+from app.schemas.place import PlaceCreate
+from app.services.artic import ArticArtwork
 
 
 def create_project(db: Session, payload: ProjectCreate) -> TravelProject:
-    project = TravelProject(**payload.model_dump())
+    project = TravelProject(**payload.model_dump(exclude={"places"}))
     db.add(project)
+    db.commit()
+    db.refresh(project)
+    return project
+
+
+def create_project_with_places(
+    db: Session,
+    *,
+    payload: ProjectCreate,
+    artworks: list[tuple[ArticArtwork, PlaceCreate]],
+) -> TravelProject:
+    project = TravelProject(**payload.model_dump(exclude={"places"}))
+    db.add(project)
+    db.flush()
+
+    for artwork, place_payload in artworks:
+        db.add(
+            ProjectPlace(
+                project_id=project.id,
+                external_id=artwork.external_id,
+                title=artwork.title,
+                api_link=artwork.api_link,
+                notes=place_payload.notes,
+            )
+        )
+
     db.commit()
     db.refresh(project)
     return project
