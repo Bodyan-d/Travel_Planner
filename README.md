@@ -18,3 +18,5 @@ The API will be available at `http://127.0.0.1:8000`.
 Implemented project and project-place CRUD endpoints with Art Institute of Chicago API validation.
 
 Art Institute API responses are cached in memory for 300 seconds by default. Override with `ARTIC_CACHE_TTL_SECONDS`.
+
+Management endpoints require HTTP Basic authentication. Defaults are `admin` / `admin`; override with `BASIC_AUTH_USERNAME` and `BASIC_AUTH_PASSWORD`.

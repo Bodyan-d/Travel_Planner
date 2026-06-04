@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./travel_planner.db"
     artic_base_url: str = "https://api.artic.edu/api/v1"
     artic_cache_ttl_seconds: int = 300
+    basic_auth_username: str = "admin"
+    basic_auth_password: str = "admin"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
